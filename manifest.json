@@ -1,10 +1,11 @@
 {
-  "name": "Classic 3D Ludo",
+  "name": "Classic 3D Ludo Arena",
   "short_name": "3D Ludo",
+  "description": "A fully automated 3D Ludo game arena built for mobile and web.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
   "icons": [
     {
       "src": "icon.png",
@@ -13,3 +14,4 @@
     }
   ]
 }
+
