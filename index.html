@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Ludo Arena - Fully Automatic Steps</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #090d16;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 4px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container {
+            max-width: 410px;
+            margin: 0 auto;
+            background: #151b2b;
+            padding: 8px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid #283548;
+        }
+
+        .ludo-board {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            background: #ffffff;
+            border: 3px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .home-base {
+            grid-column: span 6;
+            grid-row: span 6;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        .base-inner {
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            padding: 8px;
+            gap: 10px;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.25);
+        }
+        .pawn-slot {
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.25);
+            position: relative;
+        }
+
+        .red-base { background: #ef4444; grid-column: 1 / 7; grid-row: 10 / 16; }
+        .blue-base { background: #3b82f6; grid-column: 1 / 7; grid-row: 1 / 7; }
+        .green-base { background: #22c55e; grid-column: 10 / 16; grid-row: 1 / 7; }
+        .yellow-base { background: #eab308; grid-column: 10 / 16; grid-row: 10 / 16; }
+
+        .center-home {
+            grid-column: 7 / 10;
+            grid-row: 7 / 10;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            position: relative;
+            background: #1e293b;
+            z-index: 2;
+        }
+        .home-triangle-1 { background: #22c55e; grid-column: 1/4; grid-row: 1; }
+        .home-triangle-2 { background: #eab308; grid-column: 3; grid-row: 1/4; }
+        .home-triangle-3 { background: #ef4444; grid-column: 1/4; grid-row: 3; }
+        .home-triangle-4 { background: #3b82f6; grid-column: 1; grid-row: 1/4; }
+
+        .cell {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .pawn {
+            width: 26px;
+            height: 32px;
+            border-radius: 50% 50% 42% 42% / 60% 60% 40% 40%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.7), inset 0 2px 3px rgba(255,255,255,0.9);
+            z-index: 20;
+            position: relative;
+            transition: all 0.25s ease-in-out;
+        }
+        .p-blue { background: radial-gradient(circle at 35% 30%, #60a5fa, #1d4ed8); border: 1.5px solid #1e3a8a; }
+        .p-green { background: radial-gradient(circle at 35% 30%, #4ade80, #15803d); border: 1.5px solid #14532d; }
+        .p-yellow { background: radial-gradient(circle at 35% 30%, #facc15, #a16207); border: 1.5px solid #713f12; }
+        .p-red { background: radial-gradient(circle at 35% 30%, #f87171, #b91c1c); border: 1.5px solid #7f1d1d; }
+
+        #control-panel {
+            background: #090d16;
+            padding: 8px;
+            border-radius: 12px;
+            margin-top: 6px;
+            border: 1px solid #283548;
+        }
+        
+        .dice-display {
+            font-size: 14px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        #dice-val {
+            display: inline-block;
+            background: #1e293b;
+            color: #fbbf24;
+            font-size: 20px;
+            font-weight: 900;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            border-radius: 8px;
+            border: 2px solid #fbbf24;
+        }
+
+        button {
+            background: linear-gradient(to bottom, #fcd34d, #f59e0b);
+            color: #111827;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            touch-action: manipulation;
+        }
+        button:active { background: #d97706; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .status-text {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #38bdf8;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div style="background: #1e293b; padding: 6px; border-radius: 8px; margin-bottom: 6px;">
+            <h2 style="margin: 0; font-size: 14px; color: #38bdf8;">CLASSIC 3D LUDO</h2>
+        </div>
+
+        <div class="status-text" id="status">Turn: Blue Player - Roll the Dice</div>
+
+        <div class="ludo-board" id="board">
+            <div class="home-base blue-base">
+                <div class="base-inner">
+                    <div class="pawn-slot" id="slot-b-0"></div>
+                    <div class="pawn-slot" id="slot-b-1"></div>
+                    <div class="pawn-slot" id="slot-b-2"></div>
+                    <div class="pawn-slot" id="slot-b-3"></div>
+                </div>
+            </div>
+            <div class="home-base green-base">
+                <div class="base-inner">
+                    <div class="pawn-slot" id="slot-g-0"></div>
+                    <div class="pawn-slot" id="slot-g-1"></div>
+                    <div class="pawn-slot" id="slot-g-2"></div>
+                    <div class="pawn-slot" id="slot-g-3"></div>
+                </div>
+            </div>
+            <div class="home-base red-base">
+                <div class="base-inner">
+                    <div class="pawn-slot" id="slot-r-0"></div>
+                    <div class="pawn-slot" id="slot-r-1"></div>
+                    <div class="pawn-slot" id="slot-r-2"></div>
+                    <div class="pawn-slot" id="slot-r-3"></div>
+                </div>
+            </div>
+            <div class="home-base yellow-base">
+                <div class="base-inner">
+                    <div class="pawn-slot" id="slot-y-0"></div>
+                    <div class="pawn-slot" id="slot-y-1"></div>
+                    <div class="pawn-slot" id="slot-y-2"></div>
+                    <div class="pawn-slot" id="slot-y-3"></div>
+                </div>
+            </div>
+
+            <div class="center-home">
+                <div class="home-triangle-1"></div><div class="home-triangle-2"></div>
+                <div class="home-triangle-3"></div><div class="home-triangle-4"></div>
+            </div>
+        </div>
+
+        <div id="control-panel">
+            <div class="dice-display">
+                <span>🎲 Dice:</span> <span id="dice-val">-</span>
+            </div>
+            <button id="roll-btn" onclick="rollDice()">ROLL DICE</button>
+        </div>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        
+        for (let r = 0; r < 15; r++) {
+            for (let c = 0; c < 15; c++) {
+                if ((r < 6 && c < 6) || (r < 6 && c > 8) || (r > 8 && c < 6) || (r > 8 && c > 8) || (r >= 6 && r <= 8 && c >= 6 && c <= 8)) {
+                    continue;
+                }
+                let cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${r}-${c}`;
+                cell.style.gridRow = (r + 1);
+                cell.style.gridColumn = (c + 1);
+                boardEl.appendChild(cell);
+            }
+        }
+
+        const trackCoords = [
+            [13,6], [12,6], [11,6], [10,6], [9,6], [8,5], [8,4], [8,3], [8,2], [8,1], [8,0], [7,0], [6,0],
+            [6,1], [6,2], [6,3], [6,4], [6,5], [5,6], [4,6], [3,6], [2,6], [1,6], [0,6], [0,7], [0,8],
+            [1,8], [2,8], [3,8], [4,8], [5,8], [6,9], [6,10], [6,11], [6,12], [6,13], [6,14], [7,14], [8,14],
+            [8,13], [8,12], [8,11], [8,10], [8,9], [9,8], [10,8], [11,8], [12,8], [13,8], [14,8], [14,7], [14,6]
+        ];
+
+        const players = [
+            { name: "Blue", color: "#3b82f6", key: "b", startIdx: 13, pos: [-1,-1,-1,-1] },
+            { name: "Green", color: "#22c55e", key: "g", startIdx: 26, pos: [-1,-1,-1,-1] },
+            { name: "Yellow", color: "#eab308", key: "y", startIdx: 39, pos: [-1,-1,-1,-1] },
+            { name: "Red", color: "#ef4444", key: "r", startIdx: 0, pos: [-1,-1,-1,-1] }
+        ];
+
+        let turn = 0;
+        let currentDice = 0;
+        let isMoving = false;
+        let audioCtx = null;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(type === 'dice' ? 300 : 500, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(type === 'dice' ? 600 : 800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {}
+        }
+
+        players.forEach(p => {
+            p.pos.forEach((_, i) => {
+                let slot = document.getElementById(`slot-${p.key}-${i}`);
+                if (slot) {
+                    let pawn = document.createElement('div');
+                    pawn.className = `pawn p-${p.name.toLowerCase()}`;
+                    pawn.id = `pawn-${p.key}-${i}`;
+                    slot.appendChild(pawn);
+                }
+            });
+        });
+
+        function rollDice() {
+            if (isMoving) return;
+            playSound('dice');
+
+            currentDice = Math.floor(Math.random() * 6) + 1;
+            document.getElementById("dice-val").innerText = currentDice;
+
+            let p = players[turn];
+            
+            // Find all valid moves for current player
+            let validIndices = [];
+            p.pos.forEach((pos, i) => {
+                if ((pos === -1 && currentDice === 6) || (pos !== -1 && pos + currentDice <= 51)) {
+                    validIndices.push(i);
+                }
+            });
+
+            if (validIndices.length === 0) {
+                document.getElementById("status").innerText = `${p.name}: No valid moves. Skipping...`;
+                document.getElementById("roll-btn").disabled = true;
+                setTimeout(() => { nextTurn(); }, 1200);
+            } else {
+                // Automatically select the first available valid pawn and move it without any touch/tap!
+                let chosenIndex = validIndices[0];
+                let startPos = p.pos[chosenIndex];
+                let targetPos = startPos === -1 ? 0 : startPos + currentDice;
+
+                document.getElementById("status").innerText = `${p.name} moving automatically...`;
+                document.getElementById("roll-btn").disabled = true;
+
+                animateStepMove(p, chosenIndex, startPos, targetPos);
+            }
+        }
+
+        // Automatic Step-by-Step Animation Function
+        function animateStepMove(p, pawnIndex, currentPos, targetPos) {
+            isMoving = true;
+
+            function step() {
+                if (currentPos === -1) {
+                    currentPos = 0; 
+                } else if (currentPos < targetPos) {
+                    currentPos++;
+                }
+
+                p.pos[pawnIndex] = currentPos;
+                updateBoard();
+                playSound('move');
+
+                if (currentPos < targetPos) {
+                    setTimeout(step, 250); // Speed of each step
+                } else {
+                    // Movement finished
+                    isMoving = false;
+                    if (currentDice === 6) {
+                        document.getElementById("status").innerText = `${p.name} got 6! Roll again.`;
+                        document.getElementById("roll-btn").disabled = false;
+                    } else {
+                        nextTurn();
+                    }
+                }
+            }
+
+            setTimeout(step, 200);
+        }
+
+        function nextTurn() {
+            turn = (turn + 1) % 4;
+            let p = players[turn];
+            isMoving = false;
+            document.getElementById("roll-btn").disabled = false;
+            document.getElementById("dice-val").innerText = "-";
+            document.getElementById("status").innerText = `Turn: ${p.name} Player - Roll the Dice`;
+        }
+
+        function updateBoard() {
+            players.forEach(p => {
+                p.pos.forEach((pos, i) => {
+                    let pawn = document.getElementById(`pawn-${p.key}-${i}`);
+                    if (pawn) {
+                        if (pos === -1) {
+                            let slot = document.getElementById(`slot-${p.key}-${i}`);
+                            if (slot) slot.appendChild(pawn);
+                        } else {
+                            let absIdx = (p.startIdx + pos) % 52;
+                            let coord = trackCoords[absIdx];
+                            let targetCell = document.getElementById(`cell-${coord[0]}-${coord[1]}`);
+                            if (targetCell) targetCell.appendChild(pawn);
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+  </html>
+  
